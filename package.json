@@ -1,0 +1,19 @@
+{
+  "name": "whatogift",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CoffeePower100/Whatogift.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CoffeePower100/Whatogift/issues"
+  },
+  "homepage": "https://github.com/CoffeePower100/Whatogift#readme"
+}
