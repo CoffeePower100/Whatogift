@@ -9,6 +9,9 @@ app.use(bp.json());
 
 const mongoUrl = 'mongodb+srv://whatogift-user:vjyDggq3UeZZWe1Z@cluster0.exs8faa.mongodb.net/whatogiftdb?retryWrites=true&w=majority';
 
+import accountRoute from './controllers/account.js';
+app.use('/', accountRoute);
+
 const port = 3001;
 
 mongoose.connect(mongoUrl)
