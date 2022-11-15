@@ -14,7 +14,7 @@ import accountRoute from './controllers/account.js';
 app.use('/api/account', accountRoute);
 
 import companiesRoute from './controllers/company.js';
-app.use('api/company', companiesRoute);
+app.use('/api/company', companiesRoute);
 
 const port = 3001;
 
