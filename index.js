@@ -16,6 +16,9 @@ app.use('/api/account', accountRoute);
 import companiesRoute from './controllers/company.js';
 app.use('/api/company', companiesRoute);
 
+import productRoute from './controllers/product.js';
+app.use('/api/product', productRoute);
+
 const port = 3001;
 
 mongoose.connect(mongoUrl)

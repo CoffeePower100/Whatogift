@@ -44,6 +44,7 @@ router.post('/signup', async (req, res) =>
         {
             Account.create({
                 _id: id,
+                associateId: id,
                 email: email,
                 password: encryptPass,
                 firstName: firstName,
