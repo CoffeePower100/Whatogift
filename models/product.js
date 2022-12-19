@@ -26,7 +26,20 @@ const productSchema = new Schema({
         }
     ],
 
-    createdAt: {type: Date, default: Date.now}
+    createdAt: {type: Date, default: Date.now},
+    minimumAge: Number,
+    maximumAge: Number,
+    gender: 
+    {
+        female: Boolean,
+        male: Boolean
+    },
+    tags: [
+        {
+            product: String
+        }
+    ],
+    hasOnlinePurchase: Boolean
 });
 
 export default mongoose.model('Product', productSchema);
