@@ -12,7 +12,6 @@ app.use(bp.json());
 
 const mongoUrl = 'mongodb+srv://whatogift-user:vjyDggq3UeZZWe1Z@cluster0.exs8faa.mongodb.net/whatogiftdb?retryWrites=true&w=majority';
 
-
 const options = {
     definition: {
         openapi: '3.0.0',
@@ -24,9 +23,23 @@ const options = {
             {
                 url: 'http://localhost:3001'
             }
-        ]  
+        ],
+        components: {
+            securitySchemes: {
+                bearerAuth: {
+                    type: 'http',
+                    scheme: 'bearer',
+                    bearerFormat: 'JWT'
+                }
+            }
+        },
+        security: [
+            {
+                bearerAuth: []
+            }
+        ]
     },
-    apis: ['./controllers/*.js']
+    apis:['./controllers/*.js']
 } 
 
 const swaggerSpec = swaggerJsDoc(options);
