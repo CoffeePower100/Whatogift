@@ -228,11 +228,93 @@ router.get('/get_all_products', async(req, res) => {
     })
 })
 
+/** 
+ * @swagger
+ * /api/product/create_new_product:
+ *  post:
+ *   summary: Create new product
+ *   description: Use this endpoint to create a new product
+ *   tags: [Products]
+ *   requestBody:
+ *    content:
+ *     application/json:
+ *      schema:
+ *       properties:
+ *        productName:
+ *         type: string
+ *         example: "Puma BVB Shirt" 
+ *        companyId:
+ *         type: string
+ *         example: "6385cdc496d4f8141dbc925f"
+ *        categoryId:
+ *         type: string
+ *         example: "6385cd1096d4f8141dbc9251" 
+ *        brandId:
+ *         type: string
+ *         example: "6385cce896d4f8141dbc924b"
+ *        productImage:
+ *         type: string
+ *         example: "https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_1500,h_1500/global/765883/01/fnd/GLOBAL/fmt/png/%D7%91%D7%95%D7%A8%D7%95%D7%A1%D7%99%D7%94-%D7%93%D7%95%D7%A8%D7%98%D7%9E%D7%95%D7%A0%D7%93-%D7%91%D7%99%D7%AA-22/23-%D7%94%D7%A2%D7%AA%D7%A7-%D7%92'%D7%A8%D7%96%D7%99-%D7%92%D7%91%D7%A8%D7%99%D7%9D"        
+ *        productPrice:
+ *         type: number
+ *         example: 389.00         
+ *        productDescription:
+ *         type: string
+ *         example: "This is Puma's BVB football club shirt, for men."
+ *        unitInStock: 
+ *         type: number
+ *         example: 56 
+ *        minimumAge:
+ *         type: number
+ *         example: 12
+ *        maximumAge:
+ *         type: number
+ *         example: 40
+ *        genderTarget:
+ *         type: string
+ *         example: "male"
+ *        tags:
+ *         type: array
+ *         example: ["sports", "football", "clothes"]
+ *        hasOnlinePurchase:
+ *         type: boolean
+ *         example: true
+ *   responses:
+ *    200:
+ *     description: Product created
+ *    500:
+ *     description: Failure in creating product
+*/
 router.post('/create_new_product', Auth, async(req, res) => {
+    let i = 0;
+    
     const id = mongoose.Types.ObjectId();
     const { companyId, categoryId, brandId,
         productName, productPrice, productDescription,
-        unitInStock, productImage} = req.body;
+        unitInStock, productImage, minimumAge, maximumAge,
+        genderTarget, tags, hasOnlinePurchase} = req.body;
+    
+    const gender = {"female" : false, "male": false};
+    
+    if (genderTarget in gender)
+    {
+        gender[genderTarget] = true;
+    }
+    else
+    {
+        // Unisex: product will be for all genders:
+        Object.keys(gender).forEach(currGender => {gender[currGender] = true;});
+    }
+
+    /*
+    order given tags by user
+    in objects, per tag:
+    */
+    for ( ; i < tags.length; i++)
+    {
+        tags[i] = {currTag: tags[i]};
+    }
+
     const _product = new Product({
         _id: id,
         companyId: companyId,
@@ -243,7 +325,12 @@ router.post('/create_new_product', Auth, async(req, res) => {
         productPrice: productPrice,
         productDescription: productDescription,
         unitInStock: unitInStock,
-        reviews: []
+        reviews: [],
+        minimumAge: minimumAge,
+        maximumAge: maximumAge,
+        gender: gender,
+        tags: tags,
+        hasOnlinePurchase: hasOnlinePurchase
     });
     _product.save()
     .then(product_created => {
@@ -260,6 +347,89 @@ router.post('/create_new_product', Auth, async(req, res) => {
 
 router.delete('/delete_product', Auth, async(req, res) => {
 
+})
+
+
+router.post('/find_suited_gift', async (req, res) => {
+    let i = 0;
+    let j = 0;
+    let isTagFound = false; 
+    const {relationLevel, interests, events, minmiumPrice, 
+        maximumPrice, age, genderTarget} = req.body;
+
+    const checkedTags = [];
+    const eventsTags = 
+    {
+        "birthday": ["sports", "clothes", "clocks", "gadgets"],
+        "wedding anniversary": ["flowers", "jewelry", "clocks"]
+    };
+
+    switch (relationLevel) {
+        case 1:
+            minmiumPrice = 150;
+            break;
+        
+        case 2:
+            minmiumPrice = 120;
+            break;
+        case 3:
+            minmiumPrice = 100;
+            break;
+        case 4:
+            minimumPrice = 70;
+            break;
+        case 5:
+            minmiumPrice = 40;
+            break;
+        default:
+            // do not set minimum price for gift.
+    }
+
+    if ([] != interests)
+    {
+        checkedTags += interests;
+    }
+
+    if ([] != events)
+    {
+        for ( ; i < events.length; i++)
+        {
+            if (events[i] in eventsTags)
+            {
+                checkedTags += eventsTags[events[i]];
+            }
+        }
+    }
+
+    Product.find().populate("companyId", "contact")
+    .then(products => {
+        
+        for ( ; j < products.length; j++)
+        {
+            /*
+            if ((minimumPrice >= 0) && (products[j].productPrice >= minmiumPrice))
+            {
+                if ((maximumPrice >= 0) && (products[j].productPrice < maximumPrice))
+                {
+                
+                }
+            }
+            
+            // else
+            products.remove(products[i]);
+            */
+        }
+        return res.status(200).json({
+            status: true,
+            message: products
+        })
+    })
+    .catch(err => {
+        return res.status(500).json({
+            status: false,
+            message: err.message
+        })
+    })
 })
 
 export default router;
