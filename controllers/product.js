@@ -482,9 +482,55 @@ router.delete('/delete_product', Auth, async(req, res) => {
 })
 
 
+/** 
+ * @swagger
+ * /api/product/find_suited_gift:
+ *  post:
+ *   summary: Find gift according to sent options.
+ *   description: Use this endpoint to find more specific gifts.
+ *   tags: [Products]
+ *   requestBody:
+ *    content:
+ *     application/json:
+ *      schema:
+ *       properties:
+ *        relationLevel:
+ *         type: number
+ *         example: 4
+ *        interests: 
+ *         type: array
+ *         example: ["football"] 
+ *        events: 
+ *         type: array
+ *         example: ["birthday"] 
+ *        minimumPrice:
+ *         type: number
+ *         example: 100
+ *        maximumPrice: 
+ *         type: number
+ *         example: -1
+ *        age:
+ *         type: number
+ *         example: 13 
+ *        genderTarget:
+ *         type: string
+ *         example: "male"
+ *        locationRadius:
+ *         type: number
+ *         example: -1 
+ *        location:
+ *         type: object
+ *         example: {"latitude": "31.250298", "longitude": "34.771804"}
+ *   responses:
+ *    200:
+ *     description: Product created
+ *    500:
+ *     description: Failure in creating product
+*/
 router.post('/find_suited_gift', async (req, res) => {
     let i = 0;
     let j = 0;
+    let currCheckedTagIn = 0;
 
     const {relationLevel, interests, events, minimumPrice, 
         maximumPrice, age, genderTarget, locationRadius, location} = req.body;
@@ -494,7 +540,7 @@ router.post('/find_suited_gift', async (req, res) => {
     let checkedTags = [];
     let currProductCompanyLocation = {};
     let currProductCompanyDistance = 0;
-    let removeCurrProduct = true;
+    let removeCurrProduct = false;
     const eventsTags = 
     {
         "birthday": ["sports", "clothes", "clocks", "gadgets"],
@@ -523,7 +569,7 @@ router.post('/find_suited_gift', async (req, res) => {
 
     if ([] != interests)
     {
-        checkedTags += interests;
+        checkedTags = checkedTags.concat(interests);
     }
 
     if ([] != events)
@@ -532,7 +578,7 @@ router.post('/find_suited_gift', async (req, res) => {
         {
             if (events[i] in eventsTags)
             {
-                checkedTags += eventsTags[events[i]];
+                checkedTags = checkedTags.concat(eventsTags[events[i]]);
             }
         }
     }
@@ -541,7 +587,7 @@ router.post('/find_suited_gift', async (req, res) => {
     .then(products => {
         for ( ; j < products.length; j++, removeCurrProduct = false)
         {
-            if ( (minimumPrice < 0) || (products[j].productPrice >= minimumPrice))
+            if ( (currMinimumPrice < 0) || (products[j].productPrice >= currMinimumPrice))
             {
                 if ( (maximumPrice < 0) || (products[j].productPrice < maximumPrice))
                 {
@@ -556,16 +602,22 @@ router.post('/find_suited_gift', async (req, res) => {
                                 removeCurrProduct = true;
                             }
 
+                            console.log(checkedTags);
                             // check if at least one of
                             // checked tags is in product's tags:
                             for (i = 0; i < checkedTags.length; i++)
                             {
-                                if (products[j].tags.includes(checkedTags[i]))
+                                for (currCheckedTagIn = 0; currCheckedTagIn < products[j].tags.length; currCheckedTagIn++)
                                 {
-                                    removeCurrProduct = false;
-                                    
-                                    // close loop (one tag found in product):
-                                    i = checkedTags.length;
+                                    console.log(checkedTags[i], products[j].tags[currCheckedTagIn].currTag);
+                                    if (products[j].tags[currCheckedTagIn].currTag == checkedTags[i])
+                                    {
+                                        removeCurrProduct = false;
+                                                                            
+                                        // close loop (one tag found in product):
+                                        currCheckedTagIn = products[j].tags.length;
+                                        i = checkedTags.length;
+                                    }
                                 }
                             }
 
@@ -573,8 +625,9 @@ router.post('/find_suited_gift', async (req, res) => {
                             {
                                 currProductCompanyLocation = 
                                 { latitude: products[j].companyId.contact.latitude, longitude: products[j].companyId.contact.longitude };
-
+                                
                                 currProductCompanyDistance = getDistance(location, currProductCompanyLocation);
+
                                 if ( (products[j].companyId.onlineShopping) || (locationRadius < 0) || (locationRadius >= currProductCompanyDistance))
                                 {
                                     filteredProducts.push({ productInfo: products[j], productDistanceFromUser: currProductCompanyDistance});    
@@ -587,6 +640,7 @@ router.post('/find_suited_gift', async (req, res) => {
             
         }
 
+        console.log(filteredProducts);
         // sort filtered products from
         // closest to user to most far from user:
         sortedProductsAfterFilter = filteredProducts.sort((currProduct, nextProduct) => {
