@@ -40,7 +40,7 @@ router.post('/create_company', Auth, async(req, res) => {
             _id: id,
             associateId: user._id,
             companyName: companyName,
-            contant: contant,
+            contact: contact,
             bio: "",
             onlineShopping: onlineShopping
         });
