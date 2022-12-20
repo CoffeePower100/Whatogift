@@ -17,6 +17,7 @@ const CompanySchema = new Schema({
     },
     logo: {type: String, default: 'https://cdn.logo.com/hotlink-ok/logo-social.png'},
     bio: String,
+    onlineShopping: Boolean,
     CreatedAt: {type: Date, default: Date.now}
 });
 

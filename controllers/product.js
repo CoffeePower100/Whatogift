@@ -9,6 +9,8 @@ import Product from '../models/product.js';
 import Brand from '../models/brand.js';
 import Category from '../models/category.js';
 
+import { getDistance } from 'geolib';
+
 /**
  * @swagger
  *  /api/product/get_all_categories:
@@ -39,6 +41,47 @@ router.get('/get_all_categories', async(req, res) => {
     })
 })
 
+/**
+ * @swagger
+ * definitions:
+ *  Category:
+ *   type: object
+ *   properties:
+ *    categoryName:
+ *     type: string
+ *     description: The name of the category
+ *     example: Clocks 
+ *  Brand:
+ *   type: object
+ *   properties:
+ *    brandName:
+ *     type: string
+ *     description: The name of the brand
+ *     example: Nike
+ *    brandLogo:
+ *     type: string
+ *     description: Copy and paste image url
+ *     example: nike_logo.png
+ */
+
+/** 
+ * @swagger
+ * /api/product/create_new_category:
+ *  post:
+ *   summary: Create new category
+ *   description: Use this endpoint to create a new brand
+ *   tags: [Products]
+ *   requestBody:
+ *    content:
+ *     application/json:
+ *      schema:
+ *       $ref: '#/definitions/Category'
+ *   responses:
+ *    200:
+ *     description: Category created
+ *    500:
+ *     description: Failure in created category
+*/
 router.post('/create_new_category', Auth, async(req, res) => {
     const {categoryName} = req.body;
 
@@ -75,8 +118,96 @@ router.post('/create_new_category', Auth, async(req, res) => {
     }
 })
 
-router.delete('/delete_category', Auth, async(req,res) => {
+/** 
+ * @swagger
+ * /api/product/update_category/{id}:
+ *  put:
+ *   summary: Updated existing category
+ *   description: Use this endpoint to update existing category
+ *   tags: [Products]
+ *   requestBody:
+ *    content:
+ *     application/json:
+ *      schema:
+ *       properties:
+ *        categoryName:
+ *         type: string
+ *         description: The name of the category
+ *         example: Clocks 
+ *   parameters:
+ *    - in: path
+ *      name: id
+ *      schema:
+ *       type: string
+ *      required: true   
+ *   responses:
+ *    200:
+ *     description: Category updated
+ *    500:
+ *     description: Failed updating category
+*/
+router.put('/update_category/:id' , Auth, async(req, res) => {
+        const categoryName = req.body.categoryName;
+        const categoryId = req.params.id;
+        Category.findById(categoryId)
+        .then(category => {
+            category.categoryName = categoryName;
+            category.save()
+            .then(categoryUpdated => {
+                return req.status(200).json({
+                    status: true,
+                    message: categoryUpdated
+                })
+            })
+            .catch(err => {
+                return res.status(500).json({
+                    status: false,
+                    message: err.message
+                })
+            })
+        })
+        .catch(err => {
+            return res.status(500).json({
+                status: false,
+                message: err.message
+            })
+        })
 
+})
+
+/**
+ * @swagger
+ *  /api/product/delete_category/{id}:
+ *  delete:
+ *   summary: Delete category by id
+ *   tags: [Products]
+ *   parameters:
+ *    - in: path
+ *      name: id
+ *      schema:
+ *       type: string
+ *      required: true
+ *   responses:
+ *    200:
+ *     description: Deleted category
+ *    500:
+ *     description: Error was found
+ */
+router.delete('/delete_category/:id', Auth, async(req,res) => {
+    const categoryId = req.params.id;
+
+    Category.findByIdAndRemove(categoryId)
+    .then (deletedCategory => {
+        return res.status(200).json({
+            status: true,
+            message: "Deleted category"
+        })
+    })
+    .catch (err => {
+        return res.status(500).json({
+            
+        })
+    })
 })
 
 /**
@@ -180,7 +311,7 @@ router.post('/create_new_brand', Auth, async(req, res) => {
     const id = mongoose.Types.ObjectId();
     const _brand = new Brand({
         _id: id,
-        brandName:brandName,
+        brandName: brandName,
         brandLogo: brandLogo
     });
     _brand.save()
@@ -276,9 +407,6 @@ router.get('/get_all_products', async(req, res) => {
  *        tags:
  *         type: array
  *         example: ["sports", "football", "clothes"]
- *        hasOnlinePurchase:
- *         type: boolean
- *         example: true
  *   responses:
  *    200:
  *     description: Product created
@@ -287,15 +415,17 @@ router.get('/get_all_products', async(req, res) => {
 */
 router.post('/create_new_product', Auth, async(req, res) => {
     let i = 0;
-    
+    let tagsObjsArr = [];
+
     const id = mongoose.Types.ObjectId();
     const { companyId, categoryId, brandId,
         productName, productPrice, productDescription,
         unitInStock, productImage, minimumAge, maximumAge,
-        genderTarget, tags, hasOnlinePurchase} = req.body;
+        genderTarget, tags} = req.body;
     
     const gender = {"female" : false, "male": false};
-    
+
+
     if (genderTarget in gender)
     {
         gender[genderTarget] = true;
@@ -312,8 +442,9 @@ router.post('/create_new_product', Auth, async(req, res) => {
     */
     for ( ; i < tags.length; i++)
     {
-        tags[i] = {currTag: tags[i]};
+        tagsObjsArr.push({currTag: tags[i]});
     }
+    console.log(tagsObjsArr);
 
     const _product = new Product({
         _id: id,
@@ -329,17 +460,18 @@ router.post('/create_new_product', Auth, async(req, res) => {
         minimumAge: minimumAge,
         maximumAge: maximumAge,
         gender: gender,
-        tags: tags,
-        hasOnlinePurchase: hasOnlinePurchase
+        tags: tagsObjsArr,
     });
     _product.save()
     .then(product_created => {
         return res.status(200).json({
+            status: true,
             message: product_created
         })
     })
     .catch(error => {
         return res.status(500).json({
+            status: false,
             message: error.message
         })
     })
@@ -353,11 +485,16 @@ router.delete('/delete_product', Auth, async(req, res) => {
 router.post('/find_suited_gift', async (req, res) => {
     let i = 0;
     let j = 0;
-    let isTagFound = false; 
-    const {relationLevel, interests, events, minmiumPrice, 
-        maximumPrice, age, genderTarget} = req.body;
 
-    const checkedTags = [];
+    const {relationLevel, interests, events, minimumPrice, 
+        maximumPrice, age, genderTarget, locationRadius, location} = req.body;
+    let currMinimumPrice = minimumPrice;
+    let filteredProducts = [];
+    let sortedProductsAfterFilter = [];    
+    let checkedTags = [];
+    let currProductCompanyLocation = {};
+    let currProductCompanyDistance = 0;
+    let removeCurrProduct = true;
     const eventsTags = 
     {
         "birthday": ["sports", "clothes", "clocks", "gadgets"],
@@ -366,20 +503,19 @@ router.post('/find_suited_gift', async (req, res) => {
 
     switch (relationLevel) {
         case 1:
-            minmiumPrice = 150;
-            break;
-        
+            currMinimumPrice = 150;
+            break;        
         case 2:
-            minmiumPrice = 120;
+            currMinimumPrice = 120;
             break;
         case 3:
-            minmiumPrice = 100;
+            currMinimumPrice = 100;
             break;
         case 4:
-            minimumPrice = 70;
+            currMinimumPrice = 70;
             break;
         case 5:
-            minmiumPrice = 40;
+            currMinimumPrice = 40;
             break;
         default:
             // do not set minimum price for gift.
@@ -401,27 +537,65 @@ router.post('/find_suited_gift', async (req, res) => {
         }
     }
 
-    Product.find().populate("companyId", "contact")
+    Product.find().populate("companyId")
     .then(products => {
-        
-        for ( ; j < products.length; j++)
+        for ( ; j < products.length; j++, removeCurrProduct = false)
         {
-            /*
-            if ((minimumPrice >= 0) && (products[j].productPrice >= minmiumPrice))
+            if ( (minimumPrice < 0) || (products[j].productPrice >= minimumPrice))
             {
-                if ((maximumPrice >= 0) && (products[j].productPrice < maximumPrice))
+                if ( (maximumPrice < 0) || (products[j].productPrice < maximumPrice))
                 {
-                
+                    if (  (age < 0) || ((age >= products[j].minimumAge) && (age < products[j].maximumAge)))
+                    {
+                        if ( !(genderTarget in products[j].gender) || products[j].gender[genderTarget])
+                        {
+                            // if there's at least one tag
+                            // to check in product's tags:
+                            if (0 != checkedTags.length)
+                            {
+                                removeCurrProduct = true;
+                            }
+
+                            // check if at least one of
+                            // checked tags is in product's tags:
+                            for (i = 0; i < checkedTags.length; i++)
+                            {
+                                if (products[j].tags.includes(checkedTags[i]))
+                                {
+                                    removeCurrProduct = false;
+                                    
+                                    // close loop (one tag found in product):
+                                    i = checkedTags.length;
+                                }
+                            }
+
+                            if (!removeCurrProduct)
+                            {
+                                currProductCompanyLocation = 
+                                { latitude: products[j].companyId.contact.latitude, longitude: products[j].companyId.contact.longitude };
+
+                                currProductCompanyDistance = getDistance(location, currProductCompanyLocation);
+                                if ( (products[j].companyId.onlineShopping) || (locationRadius < 0) || (locationRadius >= currProductCompanyDistance))
+                                {
+                                    filteredProducts.push({ productInfo: products[j], productDistanceFromUser: currProductCompanyDistance});    
+                                }
+                            }
+                        }
+                    }
                 }
             }
             
-            // else
-            products.remove(products[i]);
-            */
         }
+
+        // sort filtered products from
+        // closest to user to most far from user:
+        sortedProductsAfterFilter = filteredProducts.sort((currProduct, nextProduct) => {
+            currProduct.productDistanceFromUser - nextProduct.productDistanceFromUser   
+        });
+
         return res.status(200).json({
             status: true,
-            message: products
+            message: sortedProductsAfterFilter
         })
     })
     .catch(err => {

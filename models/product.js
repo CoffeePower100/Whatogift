@@ -36,10 +36,9 @@ const productSchema = new Schema({
     },
     tags: [
         {
-            product: String
+            currTag: String,
         }
     ],
-    hasOnlinePurchase: Boolean
 });
 
 export default mongoose.model('Product', productSchema);

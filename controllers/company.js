@@ -21,7 +21,7 @@ router.get('/get_companies', Auth, async(req, res) => {
 })
 router.post('/create_company', Auth, async(req, res) => {
     const user = req.user;
-    const {companyName, contant} = req.body;
+    const {companyName, contant, onlineShopping} = req.body;
 
     // Check if company exist under the asscociate id
     const company = await Company.find({associateId: user._id});
@@ -41,7 +41,8 @@ router.post('/create_company', Auth, async(req, res) => {
             associateId: user._id,
             companyName: companyName,
             contant: contant,
-            bio: ""
+            bio: "",
+            onlineShopping: onlineShopping
         });
         _company.save()
         .then(createdCompany => {
@@ -61,7 +62,7 @@ router.post('/create_company', Auth, async(req, res) => {
 
 router.post('/update_company', Auth, async(req, res) => {
     const user = req.user;
-    const {companyName, contact, logo, bio, companyId} = req.body;
+    const {companyName, contact, logo, bio, companyId, onlineShopping} = req.body;
 
     // Check if company exist under the asscociate id
     Company.findById(companyId)
@@ -74,7 +75,7 @@ router.post('/update_company', Auth, async(req, res) => {
             _company.contact = contact;
             _company.logo = logo;
             _company.bio = bio;
-
+            _company.onlineShopping = onlineShopping;
             _company.save()
             .then(updatedCompany => {
                 return res.status(200).json({
@@ -102,10 +103,6 @@ router.post('/update_company', Auth, async(req, res) => {
             message: err.message
         }) 
     })
-    // Check if company exist under the asscociate id
-    // post gives associateId
-
-    // Create company: company
 })
 
 export default router;
