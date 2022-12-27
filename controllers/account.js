@@ -21,10 +21,10 @@ let loginStatusNum = 2; // 0 - email or user not found
 // MODELS
 import Account from '../models/account.js';
 
+
 router.post('/signup', async (req, res) => 
 {
-    // fname, lastname, email, password
-    const {email, password, firstName, lastName} = req.body;
+    const {email, password, firstName, lastName, uid} = req.body;
     const id = mongoose.Types.ObjectId();
 
     const passCode = randRange(1000, 9999);
@@ -42,8 +42,11 @@ router.post('/signup', async (req, res) =>
         }
         else
         {
+            // edit to creating with new Account()
+            // instead
             Account.create({
                 _id: id,
+                uid: uid,
                 associateId: id,
                 email: email,
                 password: encryptPass,
@@ -55,7 +58,7 @@ router.post('/signup', async (req, res) =>
                 isRegisterSucceed = true;
                 return res.status(200).json({
                     status: true,
-                    userAccount: account
+                    account: account
                 });
             })
             .catch(err => {
