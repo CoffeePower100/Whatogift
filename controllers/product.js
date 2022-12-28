@@ -345,15 +345,21 @@ router.delete('/delete_brand', Auth, async(req, res) => {
  *    500:
  *     description: Error was found
  */
+
 router.get('/get_all_products', async(req, res) => {
     Product.find()
+    .populate("companyId")
+    .populate("brandId")
+    .populate("categoryId")
     .then(products => {
         return res.status(200).json({
+            status: true,
             message: products
         })
     })
     .catch(error => {
         return res.status(500).json({
+            status: false,
             message: error.message
         })
     })
