@@ -17,14 +17,18 @@ const AccountSchema = new Schema({
     isVerified: {type: Boolean, default: false},
     mobile: String,
     passcode: Number,
-    contant: {
+    contact: {
         address: String,
         city: String,
         state: String,
         zipcode: String,
         mobile: String,
     },
-    CreatedAt: {type: Date, default: Date.now}
+    myFavorites: [
+        {
+            favoriteProductId: mongoose.Schema.Types.ObjectId
+        }
+    ]
 });
 
 export default mongoose.model('Account', AccountSchema);

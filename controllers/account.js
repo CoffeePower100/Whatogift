@@ -52,7 +52,8 @@ router.post('/signup', async (req, res) =>
                 password: encryptPass,
                 firstName: firstName,
                 lastName: lastName,
-                passcode: passCode
+                passcode: passCode,
+                myFavorites: []
             })
             .then(account => {
                 isRegisterSucceed = true;
@@ -202,6 +203,42 @@ router.get('/getOverview', Auth, async(req,res) => {
     return res.status(200).json({
         message: `Hello ${req.user.firstName} ${req.user.lastName}`
     });
+})
+
+router.post('/add_product_to_favorites', Auth, async(req, res) => {
+    const accountId = req.body.accountId;
+    const newFavProdId = req.body.favoriteProductId;
+
+    Account.findById(accountId)
+    .then (wantedAccount => {
+        if (wantedAccount)
+        {
+            if (!wantedAccount.myFavorites.includes(newFavProdId))
+            {
+                wantedAccount.myFavorites.push(newFavProdId);
+            }
+
+            wantedAccount.save()
+            .then(updatedAccount => {
+                return res.status(200).json({
+                    status: true,
+                    account: updatedAccount
+                })
+            })
+            .catch(error => {
+                return res.status(500).json({
+                    status: false,
+                    message: error.message
+                })  
+            })
+        }
+    })
+    .catch(error => {
+        return res.status(500).json({
+            status: false,
+            message: error.message
+        })
+    })
 })
 
 export default router;
