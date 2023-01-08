@@ -155,7 +155,7 @@ router.post('/login', async(req, res) => {
                     
                     return res.status(200).json({
                             status: true,
-                            account: data,
+                            account: data.account,
                             userToken: userTok
                     });
                 } 

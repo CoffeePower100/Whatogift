@@ -26,7 +26,7 @@ const AccountSchema = new Schema({
     },
     myFavorites: [
         {
-            favoriteProductId: mongoose.Schema.Types.ObjectId
+            productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
         }
     ]
 });
