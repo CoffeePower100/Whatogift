@@ -21,7 +21,6 @@ let loginStatusNum = 2; // 0 - email or user not found
 // MODELS
 import Account from '../models/account.js';
 
-
 router.post('/signup', async (req, res) => 
 {
     const {email, password, firstName, lastName, uid} = req.body;
@@ -151,7 +150,7 @@ router.post('/login', async(req, res) => {
                     // login succeed:
                     loginStatusNum = 2;
                     // const userTok = await jsonWebToken.sign(req.body, "A2");
-                    const userTok = await jwt.sign(data, "KswkWJ3j4ljL2");
+                    const userTok = await jwt.sign(data.toJSon, "KswkWJ3j4ljL2");
                     
                     return res.status(200).json({
                             status: true,
@@ -205,24 +204,50 @@ router.get('/getOverview', Auth, async(req,res) => {
     });
 })
 
+
+/** 
+ * @swagger
+ * /api/account/add_product_to_favorites:
+ *  post:
+ *   summary: Add given product to a user's favorite products.
+ *   description: Use this endpoint to add product to favorites.
+ *   tags: [Account]
+ *   requestBody:
+ *    content:
+ *     application/json:
+ *      schema:
+ *       properties:
+ *        favoriteProductId:
+ *         type: string
+ *         example: 63a21cb598f0cf5048553de9
+ *   responses:
+ *    200:
+ *     description: Product added to favorites (if not already added as a favorite).
+ *    500:
+ *     description: Failure in creating product
+*/
 router.post('/add_product_to_favorites', Auth, async(req, res) => {
-    const accountId = req.body.accountId;
-    const newFavProdId = req.body.favoriteProductId;
+    const accountId = req.user._id;
+    const newFavProdId = new mongoose.Types.ObjectId(req.body.favoriteProductId);
 
     Account.findById(accountId)
     .then (wantedAccount => {
         if (wantedAccount)
         {
-            if (!wantedAccount.myFavorites.includes(newFavProdId))
+            if (!wantedAccount.myFavorites.includes({_id: newFavProdId}))
             {
+
                 wantedAccount.myFavorites.push(newFavProdId);
+                
             }
 
             wantedAccount.save()
-            .then(updatedAccount => {
+            .then(async (updatedAccount) => {
+                const userTok = await jwt.sign(updatedAccount.toJSON(), "KswkWJ3j4ljL2");
                 return res.status(200).json({
                     status: true,
-                    account: updatedAccount
+                    account: updatedAccount,
+                    userTok: userTok
                 })
             })
             .catch(error => {
@@ -241,4 +266,67 @@ router.post('/add_product_to_favorites', Auth, async(req, res) => {
     })
 })
 
+
+/** 
+ * @swagger
+ * /api/account/delete_product_from_favorites:
+ *  post:
+ *   summary: Delete given product from user's favorite products.
+ *   description: Use this endpoint to delete product from favorites.
+ *   tags: [Account]
+ *   requestBody:
+ *    content:
+ *     application/json:
+ *      schema:
+ *       properties:
+ *        favoriteProductId:
+ *         type: string
+ *         example: 63a21cb598f0cf5048553de9
+ *   responses:
+ *    200:
+ *     description: Product was deleted from favorites (if product was in favorites existed before).
+ *    500:
+ *     description: Failure in creating product
+*/
+router.post('/delete_product_from_favorites', Auth, async(req, res) => {
+    const accountId = req.user._id;
+    const existFavProdId = new mongoose.Types.ObjectId(req.body.favoriteProductId);
+    Account.findById(accountId)
+    .then (wantedAccount => {
+        if (wantedAccount)
+        {
+            console.log(wantedAccount.myFavorites.length);
+                const favProdIdIn = wantedAccount.myFavorites.indexOf({_id: existFavProdId});
+                // if found current product:
+                if (-1 != favProdIdIn)
+                {
+                    wantedAccount.myFavorites.splice(index, 1);
+                }
+                console.log(favProdIdIn)
+                console.log(wantedAccount.myFavorites.length);
+
+            wantedAccount.save()
+            .then(async (updatedAccount) => {
+                const userTok = await jwt.sign(updatedAccount.toJSON(), "KswkWJ3j4ljL2");
+                return res.status(200).json({
+                    status: true,
+                    account: updatedAccount,
+                    userTok: userTok
+                })
+            })
+            .catch(error => {
+                return res.status(500).json({
+                    status: false,
+                    message: error.message
+                })  
+            })
+        }
+    })
+    .catch(error => {
+        return res.status(500).json({
+            status: false,
+            message: error.message
+        })
+    })
+})
 export default router;
