@@ -21,6 +21,63 @@ let loginStatusNum = 2; // 0 - email or user not found
 // MODELS
 import Account from '../models/account.js';
 
+/**
+ * @swagger
+ * definitions:
+ *  Login:
+ *   type: object
+ *   properties:
+ *    email:
+ *     type: string
+ *     example: Dbug@gmail.com
+ *    password:
+ *     type: string
+ *     example: 111111
+ *  Register:
+ *   type: object
+ *   properties:
+ *    firstName:
+ *     type: string
+ *     example: Eli
+ *    lastName:
+ *     type: string
+ *     example: Chitrit
+ *    email:
+ *     type: string
+ *     example: eli@qwamo.com
+ *    password:
+ *     type: string
+ *     example: 123456
+ *  Verify:
+ *   type: object
+ *   properties:
+ *    email:
+ *     type: string
+ *     example: eli@qwamo.com
+ *    code:
+ *     type: int
+ *     example: 123456 
+ */
+
+
+/**
+ * @swagger
+ * /api/account/signup:
+ *  post:
+ *   summary: Create new account
+ *   tags: [Account]
+ *   description: Use this endpoint to create new account
+ *   requestBody:
+ *    content:
+ *     application/json:
+ *      schema:
+ *       $ref: '#/definitions/Register'
+ *   responses: 
+ *    200:
+ *     description: Success
+ *    500:
+ *     description: Error
+ */
 router.post('/signup', async (req, res) => 
 {
     const {email, password, firstName, lastName, uid} = req.body;
@@ -81,6 +138,25 @@ router.post('/signup', async (req, res) =>
     });
 })
 
+
+/**
+ * @swagger
+ * /api/account/verify:
+ *  post:
+ *   summary: Verify new account
+ *   tags: [Account]
+ *   description: Use this endpoint to verify new account
+ *   requestBody:
+ *    content:
+ *     application/json:
+ *      schema:
+ *       $ref: '#/definitions/Verify'
+ *   responses: 
+ *    200:
+ *     description: Success
+ *    500:
+ *     description: Error
+ */
 router.post('/verify', async(req, res) => {
     const {email, passCode} = req.body;
     Account.findOne({email:email})
@@ -124,6 +200,25 @@ router.post('/verify', async(req, res) => {
     })
 })
 
+
+/**
+ * @swagger
+ * /api/account/login:
+ *  post:
+ *   summary: Login
+ *   tags: [Account]
+ *   description: Use this endpoint to sign in
+ *   requestBody:
+ *    content:
+ *     application/json:
+ *      schema:
+ *       $ref: '#/definitions/Login'
+ *   responses: 
+ *    200:
+ *     description: Success
+ *    500:
+ *     description: Error
+ */
 router.post('/login', async(req, res) => {
     const {email, password} = req.body;
     Account.findOne({email:email})
@@ -146,15 +241,13 @@ router.post('/login', async(req, res) => {
                 }
                 else
                 {
-                    const data = {account};
                     // login succeed:
                     loginStatusNum = 2;
-                    // const userTok = await jsonWebToken.sign(req.body, "A2");
-                    const userTok = await jwt.sign(data.toJSon, "KswkWJ3j4ljL2");
+                    const userTok = await jwt.sign({account}, "KswkWJ3j4ljL2");
                     
                     return res.status(200).json({
                             status: true,
-                            account: data.account,
+                            account: account,
                             userToken: userTok
                     });
                 } 
@@ -227,18 +320,19 @@ router.get('/getOverview', Auth, async(req,res) => {
  *     description: Failure in creating product
 */
 router.post('/add_product_to_favorites', Auth, async(req, res) => {
-    const accountId = req.user._id;
-    const newFavProdId = new mongoose.Types.ObjectId(req.body.favoriteProductId);
+    const accountId = new mongoose.Types.ObjectId("63bac57a88bd0e3b66897824");  //req.user._id;
+    const newFavProdId = req.body.favoriteProductId;
+    let isProdInArr = false;
 
     Account.findById(accountId)
     .then (wantedAccount => {
         if (wantedAccount)
         {
-            if (!wantedAccount.myFavorites.includes({_id: newFavProdId}))
+            wantedAccount.myFavorites.forEach(currProd => {if ((null != currProd) && !isProdInArr) { isProdInArr = (currProd._id == newFavProdId)}});
+            if (!isProdInArr)
             {
-
+                console.log("Not Found");
                 wantedAccount.myFavorites.push(newFavProdId);
-                
             }
 
             wantedAccount.save()
@@ -290,20 +384,24 @@ router.post('/add_product_to_favorites', Auth, async(req, res) => {
 */
 router.post('/delete_product_from_favorites', Auth, async(req, res) => {
     const accountId = req.user._id;
-    const existFavProdId = new mongoose.Types.ObjectId(req.body.favoriteProductId);
+    const existFavProdId = req.body.favoriteProductId;
+    let favProdIdIn = -1; // -1 index, if product not found in user's products favorites.
+    let isProdInArr = false;
+    let i = 0;
+    
     Account.findById(accountId)
     .then (wantedAccount => {
         if (wantedAccount)
         {
             console.log(wantedAccount.myFavorites.length);
-                const favProdIdIn = wantedAccount.myFavorites.indexOf({_id: existFavProdId});
-                // if found current product:
-                if (-1 != favProdIdIn)
-                {
-                    wantedAccount.myFavorites.splice(index, 1);
-                }
-                console.log(favProdIdIn)
-                console.log(wantedAccount.myFavorites.length);
+                
+            wantedAccount.myFavorites.forEach(currProd => {if ((null != currProd) && !isProdInArr) { isProdInArr = (currProd._id == existFavProdId); 
+                                                favProdIdIn = i} i++;});
+            // if found current product:
+            if (-1 != favProdIdIn)
+            {
+                wantedAccount.myFavorites.splice(favProdIdIn, 1);
+            }
 
             wantedAccount.save()
             .then(async (updatedAccount) => {
@@ -329,4 +427,5 @@ router.post('/delete_product_from_favorites', Auth, async(req, res) => {
         })
     })
 })
+
 export default router;
