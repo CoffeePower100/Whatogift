@@ -282,6 +282,54 @@ router.post('/login', async(req, res) => {
 
 //Update account
 router.put('/update_account', Auth, async(req,res) => {
+    const {email, firstName, lastName, dob, gender, contact} = req.body;
+
+    Account.findOne({email:email})
+    .then(async account => {
+        if(account)
+        {
+            // edit to creating with new Account()
+            // instead
+            account.email = email;
+            account.firstName = firstName;
+            account.lastName = lastName;
+            account.dob = dob;
+            account.gender = gender;
+            account.contact = contact;
+
+            account.save()
+            .then(account => {
+                isRegisterSucceed = true;
+                return res.status(200).json({
+                    status: true,
+                    account: account
+                });
+            })
+            .catch(err => {
+                console.log(err);
+                // error: failed creating new user account
+                // (one option: new user with exists email address)
+                isRegisterSucceed = false;
+                return res.status(500).json({
+                    status: false,
+                    message: err.message
+            });
+        });
+        }
+        else
+        {
+            return res.status(200).json({
+                status: false,
+                message: "user's account with given email wasn't found"
+            })
+        }   
+    })
+    .catch(err => {
+        return res.status(500).json({
+            status: false,
+            message: err.message
+        })
+    });
     // update all data (personal data firstName, lastName, dob, gender, avatar, all contact)
 })
 
@@ -331,7 +379,6 @@ router.post('/add_product_to_favorites', Auth, async(req, res) => {
             wantedAccount.myFavorites.forEach(currProd => {if ((null != currProd) && !isProdInArr) { isProdInArr = (currProd._id == newFavProdId)}});
             if (!isProdInArr)
             {
-                console.log("Not Found");
                 wantedAccount.myFavorites.push(newFavProdId);
             }
 
@@ -396,7 +443,7 @@ router.post('/delete_product_from_favorites', Auth, async(req, res) => {
             console.log(wantedAccount.myFavorites.length);
                 
             wantedAccount.myFavorites.forEach(currProd => {if ((null != currProd) && !isProdInArr) { isProdInArr = (currProd._id == existFavProdId); 
-                                                favProdIdIn = i} i++;});
+                                                if (isProdInArr){favProdIdIn = i}} i++;});
             // if found current product:
             if (-1 != favProdIdIn)
             {
